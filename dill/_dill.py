@@ -402,7 +402,10 @@ class Unpickler(StockUnpickler):
 
     def find_class(self, module, name):
         if (module, name) == ('__builtin__', '__main__'):
-            return self._main.__dict__ #XXX: above set w/save_module_dict
+            #return self._main.__dict__ #XXX: above set w/save_module_dict
+            import __main__
+            #assert self._main is __main__ or _main_module is __main__
+            return __main__.__dict__
         elif (module, name) == ('__builtin__', 'NoneType'):
             return type(None) #XXX: special case: NoneType missing
         if module == 'dill.dill': module = 'dill._dill'
@@ -571,6 +574,11 @@ def _create_function(fcode, fglobals, fname=None, fdefaults=None,
                      fclosure=None, fdict=None, fkwdefaults=None):
     # same as FunctionType, but enable passing __dict__ to new function,
     # __dict__ is the storehouse for attributes added after function creation
+    
+    #if '__name__' in fglobals and fglobals['__name__'] in sys.modules:
+        #print('_create_function', fglobals)
+        #fglobals = sys.modules[fglobals['__name__']].__dict__
+    
     func = FunctionType(fcode, fglobals or dict(), fname, fdefaults, fclosure)
     if fdict is not None:
         func.__dict__.update(fdict) #XXX: better copy? option to copy?
@@ -1820,6 +1828,8 @@ def save_function(pickler, obj):
             state = None
         if state_dict:
             state = state, state_dict
+            
+        #print('save_function', object.__repr__(globs), globs)
 
         _save_with_postproc(pickler, (_create_function, (
                 obj.__code__, globs, obj.__name__, obj.__defaults__,
